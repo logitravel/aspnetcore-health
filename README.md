@@ -28,7 +28,7 @@ This command from Package Manager Console will download and install AspNetCore.H
 By default AspNetCore provides out of the box some health checks providers:
 
 * Check Urls (Http services)
-* Ftp
+
 
 ```csharp
 public void ConfigureServices(IServiceCollection app)
@@ -36,10 +36,8 @@ public void ConfigureServices(IServiceCollection app)
     services.AddHealthChecks(context =>
     {
         context
-            .AddUrlCheck("http://www.google.com")
-            .AddFtp("ftp.uconn.edu", "anonymous", "", 21, FtpTransferMode.Binary, "Public Ftp Test");
-            .AddSqlDatabase("NameOfSqlDatabase", "connectionString");
-            .AddMongoDatabase("NameOfMongoDatabase", "connectionString);
+            .AddUrlCheck("http://www.google.com",true)
+g);
     });
 }
 ```
@@ -69,6 +67,7 @@ Run the [HealthSample](https://github.com/lurumad/aspnetcore-health/tree/master/
 ]
 ```
 If all services are healthy, returns http **200 OK** status code, but if there are any unhealthy service returns http **500 Internal Server Error** status code.
+Added a boolean if you want to exclude that service for unhealthy htpp **500 result. By default is set to **true**
 
 Try with other services!
 

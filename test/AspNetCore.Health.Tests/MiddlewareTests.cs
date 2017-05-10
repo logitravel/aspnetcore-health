@@ -40,8 +40,7 @@ namespace AspNetCore.Health.Tests
                     services.AddHealthChecks(context =>
                     {
                         context
-                            .AddUrlCheck("http://www.google.com")
-                            .AddFtp("ftp.uconn.edu", "anonymous", "", 21, FtpTransferMode.Binary, "Public Ftp Test");
+                            .AddUrlCheck("http://www.google.com");
                     });
                 })
                 .Configure(app => app.UseHealthCheck("/health"));

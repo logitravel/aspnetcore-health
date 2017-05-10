@@ -1,9 +1,5 @@
 ﻿using System.Text;
 using AspNetCore.Health.Internal;
-using CoreFtp;
-using System.Data;
-using System.Data.SqlClient;
-using MongoDB.Driver;
 
 namespace AspNetCore.Health
 {
@@ -11,7 +7,7 @@ namespace AspNetCore.Health
     {
         public static HealthCheckContext AddUrlCheck(
             this HealthCheckContext checkContext,
-            string url)
+            string url, bool isCritical = true)
         {
             checkContext.Add(url, async () =>
             {
@@ -20,22 +16,29 @@ namespace AspNetCore.Health
                     var response = await HttpClientSingleton.Instance.GetAsync(url).ConfigureAwait(false);
 
                     return response.IsSuccessStatusCode
-                        ? HealthCheckResult.Healthy($"{url}")
+                        ? HealthCheckResult.Healthy($"{url}", isCritical)
                         : HealthCheckResult.Unhealthy($"{url}");
                 }
                 catch
                 {
-                    return HealthCheckResult.Unhealthy($"{url}");
+                    return HealthCheckResult.Unhealthy($"{url}", isCritical);
                 }
             });
 
             return checkContext;
         }
-
+        /// <summary>
+        /// Checks an array of urls.
+        /// </summary>
+        /// <param name="checkContext"></param>
+        /// <param name="urls"></param>
+        /// <param name="group"></param>
+        /// <param name="isCritical">Mark false if that array does not break your application</param>
+        /// <returns></returns>
         public static HealthCheckContext AddUrlChecks(
             this HealthCheckContext checkContext,
             string[] urls,
-            string group)
+            string group, bool isCritical = true)
         {
             checkContext.Add(group, async () =>
             {
@@ -66,101 +69,18 @@ namespace AspNetCore.Health
 
                 if (successfulChecks == urls.Length)
                 {
-                    return HealthCheckResult.Healthy(description.ToString());
+                    return HealthCheckResult.Healthy(description.ToString(), isCritical);
                 }
 
                 if (successfulChecks > 0)
                 {
-                    return HealthCheckResult.Warning(description.ToString());
+                    return HealthCheckResult.Warning(description.ToString(), isCritical);
                 }
 
-                return HealthCheckResult.Unhealthy(description.ToString());
+                return HealthCheckResult.Unhealthy(description.ToString(), isCritical);
             });
 
             return checkContext;
         }
-
-        public static HealthCheckContext AddFtp(
-            this HealthCheckContext checkContext,
-            string host,
-            string username,
-            string password,
-            int port,
-            FtpTransferMode mode,
-            string description)
-        {
-            checkContext.Add(host, async () =>
-            {
-                try
-                {
-                    using (var ftpClient = new FtpClient(new FtpClientConfiguration
-                    {
-                        Host = host,
-                        Username = username,
-                        Password = password,
-                        Port = port,
-                        Mode = (CoreFtp.Enum.FtpTransferMode)mode
-                    }))
-                    {
-                        await ftpClient.LoginAsync().ConfigureAwait(false);
-                    }
-
-                    return HealthCheckResult.Healthy(host);
-                }
-                catch
-                {
-                    return HealthCheckResult.Unhealthy(host);
-                }
-            });
-
-            return checkContext;
-        }
-
-        public static HealthCheckContext AddSqlDatabase(this HealthCheckContext checkContext, IDbConnection dbConnection)
-        {
-            return AddSqlDatabase(checkContext, dbConnection.Database, dbConnection.ConnectionString);
-        }
-        public static HealthCheckContext AddSqlDatabase(this HealthCheckContext checkContext, string database, string connectionString)
-        {
-            SqlConnection connection = null;
-            checkContext.Add(database, async () =>
-             {
-                 try
-                 {
-                     connection = new SqlConnection(connectionString);
-                     await connection.OpenAsync();
-                     return HealthCheckResult.Healthy(database);
-                 }
-                 catch
-                 {
-                     return HealthCheckResult.Unhealthy(database);
-                 }
-                 finally
-                 {
-                     connection?.Close();
-                 }
-             });
-            return checkContext;
-        }
-        public static HealthCheckContext AddMongoDatabase(this HealthCheckContext checkContext, string database, string connectionString)
-        {
-            checkContext.Add(database, () =>
-             {
-                 try
-                 {
-                     IMongoClient moClient = new MongoClient(connectionString);
-                     var state = moClient.Cluster.Description.State;
-                     return state == MongoDB.Driver.Core.Clusters.ClusterState.Connected ? HealthCheckResult.Healthy(database) : HealthCheckResult.Unhealthy(database);
-                 }
-                 catch
-                 {
-                     return HealthCheckResult.Unhealthy(database);
-                 }
- 
-             });
-            return checkContext;
-        }
-
-
     }
 }
